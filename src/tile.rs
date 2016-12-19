@@ -4,6 +4,13 @@
  * Renders the mandelbrot values for a tile at a given location and zoom.
  */
 
+extern crate threadpool;
+
+use self::threadpool::ThreadPool;
+use std::sync::mpsc::channel;
+
+const NUM_THREADS: usize = 4;
+
 #[derive(Debug, Copy, Clone)]
 pub struct Location {
     pub x: f64,
@@ -49,17 +56,32 @@ impl Tile {
             result:     Vec::new(),
         };
 
+        let pool = ThreadPool::new(NUM_THREADS);
+        let (tx, rx) = channel();
+
+        let jobs: Vec<(Point, &u32, u32)> = Vec::new();
+
         // Simple antialiasing by adding extra row and column
         for y in 1..(resolution + 1) {
             for x in 1..(resolution + 1) {
+                render.result.push(0); // Dummy value
+                let pos = render.result.len() - 1;
                 let point = self.get_point(x, y, resolution as f64);
-                let depth = self.iterate(point, depth);
-                //println!("({:+.5}, {:+.5}) = {:>6}", point.x, point.y, depth);
-                render.result.push(depth);
+                let inner_depth = depth;
+                let tx = tx.clone();
+                pool.execute(move || {
+                    tx.send((Tile::iterate(point, inner_depth), pos)).unwrap();
+                });
             }
         }
 
         //println!("Data is {:?}", render.result);
+        for y in 1..(resolution + 1) {
+            for x in 1..(resolution + 1) {
+                let (val, pos) = rx.recv().unwrap();
+                render.result[pos] = val;
+            }
+        }
 
         self.render = render;
     }
@@ -81,7 +103,7 @@ impl Tile {
         }
     }
 
-    fn iterate(&self, point: Point, max_depth: u32) -> u32 {
+    fn iterate(point: Point, max_depth: u32) -> u32 {
         let mut depth = 0u32;
 
         let mut next = Point {x: 0f64, y: 0f64};

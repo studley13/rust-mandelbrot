@@ -5,3 +5,4 @@ version = "0.1.0"
 authors = ["curtis.millar@gmail.com"]
 
 [dependencies]
+threadpool = "1.3.2"
