@@ -17,6 +17,7 @@ const IMPORTANT:     i32 = 0;
 const ROW_PAD_WIDTH: i32 = 4;
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub enum Color {
     RGB(u8, u8, u8),
     Grey(u8),
@@ -57,12 +58,13 @@ impl Bitmap {
         }
     }
 
-    pub fn toFile<P: AsRef<Path>>(&self, ref path: &P) {
-        let row_padding = match (self.width * self.depth as i32 / 8) % ROW_PAD_WIDTH {
+    pub fn to_file<P: AsRef<Path>>(&self, ref path: &P) {
+        let row_base_length = self.width * self.depth as i32 / 8;
+        let row_padding = match row_base_length % ROW_PAD_WIDTH {
             0 => 0,
             _ => ROW_PAD_WIDTH - (self.width % ROW_PAD_WIDTH),
         };
-        let size = PIXEL_START + (self.width + row_padding) * self.height;
+        let size = PIXEL_START + (row_base_length + row_padding) * self.height;
 
         //println!("Writing {:?} of length {}", self.data, self.data.len());
 
@@ -71,11 +73,11 @@ impl Bitmap {
         self.write_header(&mut file, size);
         self.write_dib(&mut file);
         self.write_pixels(&mut file, row_padding);
-        file.flush();
+        file.flush().unwrap();
     }
 
     fn write_header(&self, ref mut buf: &mut File, size: i32) {
-        buf.write(&BITMAP_PREFIX);
+        buf.write(&BITMAP_PREFIX).unwrap();
         // File size
         buf.write_i32::<LittleEndian>(size).unwrap();
         // These two values are reserved
@@ -93,7 +95,7 @@ impl Bitmap {
         // Bitmap height
         buf.write_i32::<LittleEndian>(self.width).unwrap();
         // Color planes
-        buf.write_i16::<LittleEndian>(0).unwrap();
+        buf.write_i16::<LittleEndian>(1).unwrap();
         // Bit Depth
         buf.write_i16::<LittleEndian>(self.depth).unwrap();
         // Compression Method
@@ -125,9 +127,9 @@ impl Bitmap {
                     24 => to_bgr(self.get_pixel(x, y)),
                     _ => Vec::new(),
                 };
-                buf.write(bytes.as_slice());
+                buf.write(bytes.as_slice()).unwrap();
             }
-            buf.write(&*pad_buf);
+            buf.write(&*pad_buf).unwrap();
         }
     }
 

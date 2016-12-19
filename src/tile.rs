@@ -59,8 +59,6 @@ impl Tile {
         let pool = ThreadPool::new(NUM_THREADS);
         let (tx, rx) = channel();
 
-        let jobs: Vec<(Point, &u32, u32)> = Vec::new();
-
         // Simple antialiasing by adding extra row and column
         for y in 0..(resolution + 1) {
             for x in 0..(resolution + 1) {
@@ -70,18 +68,19 @@ impl Tile {
                 let inner_depth = depth;
                 let tx = tx.clone();
                 pool.execute(move || {
-                    //tx.send((Tile::iterate(point, inner_depth), pos)).unwrap();
-                    tx.send((Tile::iterate(point, inner_depth), pos));
+                    if let Err(e) = tx.send((Tile::iterate(point, inner_depth), pos)) {
+                        println!("Error on {:?} @ {}: {:?}", point, pos, e);
+                    }
+                    //tx.send((Tile::iterate(point, inner_depth), pos));
                 });
             }
         }
 
         //println!("Data is {:?}", render.result);
-        for y in 1..(resolution + 1) {
-            for x in 1..(resolution + 1) {
+        for _ in 0..(resolution + 1) {
+            for _ in 0..(resolution + 1) {
                 let (val, pos) = rx.recv().unwrap();
                 render.result[pos] = val;
-                //println!("{} @ {}", val, pos);
             }
         }
 

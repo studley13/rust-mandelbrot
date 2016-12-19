@@ -24,7 +24,7 @@ fn main() {
     }
 
     let file_name = format!("mbrotTile_{:.6}x-{:.6}y-{}z.bmp", loc.x, loc.y, loc.z);
-    img.toFile(&file_name);
+    img.to_file(&file_name);
     println!("{}", file_name);
 }
 
