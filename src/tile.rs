@@ -62,15 +62,16 @@ impl Tile {
         let jobs: Vec<(Point, &u32, u32)> = Vec::new();
 
         // Simple antialiasing by adding extra row and column
-        for y in 1..(resolution + 1) {
-            for x in 1..(resolution + 1) {
+        for y in 0..(resolution + 1) {
+            for x in 0..(resolution + 1) {
                 render.result.push(0); // Dummy value
                 let pos = render.result.len() - 1;
                 let point = self.get_point(x, y, resolution as f64);
                 let inner_depth = depth;
                 let tx = tx.clone();
                 pool.execute(move || {
-                    tx.send((Tile::iterate(point, inner_depth), pos)).unwrap();
+                    //tx.send((Tile::iterate(point, inner_depth), pos)).unwrap();
+                    tx.send((Tile::iterate(point, inner_depth), pos));
                 });
             }
         }
@@ -80,6 +81,7 @@ impl Tile {
             for x in 1..(resolution + 1) {
                 let (val, pos) = rx.recv().unwrap();
                 render.result[pos] = val;
+                //println!("{} @ {}", val, pos);
             }
         }
 
@@ -93,10 +95,11 @@ impl Tile {
                 + self.actual_point_value(x    , y + 1)
                 + self.actual_point_value(x + 1, y + 1);
         sum as f64 / (self.render.depth as f64 * 4f64)
+        //self.actual_point_value(x, y) as f64 / self.render.depth as f64
     }
 
     fn get_point(&self, x: u32, y: u32, resolution: f64) -> Point {
-        let size = 1f64 / ((1 << self.location.z) as f64);
+        let size = 4f64 / ((1u64 << self.location.z) as f64 * resolution);
         Point {
             x: self.location.x - ((resolution * size) / 2f64) + x as f64 * size,
             y: self.location.y - ((resolution * size) / 2f64) + y as f64 * size,
@@ -118,17 +121,18 @@ impl Tile {
             depth += 1;
         }
 
-        /*
+        
         if depth == max_depth {
             depth = 0;
         }
-        */
+       
 
         return depth;
     }
 
     fn actual_point_value(&self, x: u32, y: u32) -> u32 {
-        let value_index = y * self.render.resolution + x;
+        // +1 to accomodate the aliasing feature
+        let value_index = y * (self.render.resolution + 1) + x;
         self.render.result[value_index as usize]
     }
 }
