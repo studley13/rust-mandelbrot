@@ -1,0 +1,7 @@
+[package]
+name = "mandelbrot"
+description = "A mandelbrot generator written in rust"
+version = "0.1.0"
+authors = ["curtis.millar@gmail.com"]
+
+[dependencies]
