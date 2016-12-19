@@ -125,7 +125,6 @@ impl Bitmap {
                     24 => to_bgr(self.get_pixel(x, y)),
                     _ => Vec::new(),
                 };
-                println!("({}, {}) => {:?}", x, y, bytes);
                 buf.write(bytes.as_slice());
             }
             buf.write(&*pad_buf);

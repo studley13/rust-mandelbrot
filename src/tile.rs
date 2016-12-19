@@ -121,11 +121,11 @@ impl Tile {
             depth += 1;
         }
 
-        
+        /*
         if depth == max_depth {
             depth = 0;
         }
-       
+        */
 
         return depth;
     }
