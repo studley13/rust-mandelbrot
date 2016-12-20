@@ -94,7 +94,6 @@ impl Tile {
                 + self.actual_point_value(x    , y + 1)
                 + self.actual_point_value(x + 1, y + 1);
         sum as f64 / (self.render.depth as f64 * 4f64)
-        //self.actual_point_value(x, y) as f64 / self.render.depth as f64
     }
 
     fn get_point(&self, x: u32, y: u32, resolution: f64) -> Point {
@@ -119,12 +118,6 @@ impl Tile {
             curr = next;
             depth += 1;
         }
-
-        /*
-        if depth == max_depth {
-            depth = 0;
-        }
-        */
 
         return depth;
     }

@@ -1,7 +1,7 @@
 
 extern crate byteorder;
 use self::byteorder::{LittleEndian, WriteBytesExt};
-use std::io::Write;
+use std::io::{Write, stdout};
 use std::fs::File;
 use std::path::Path;
 
@@ -21,6 +21,7 @@ const ROW_PAD_WIDTH: i32 = 4;
 pub enum Color {
     RGB(u8, u8, u8),
     Grey(u8),
+    Black,
 }
 
 #[derive(Debug)]
@@ -50,7 +51,7 @@ impl Bitmap {
 
         // Fill out with data
         while self.data.len() <= index as usize && self.data.len() < self.data.capacity() {
-            self.data.push(Color::Grey(0u8));
+            self.data.push(Color::Black);
         }
 
         if let Some(pixel) = self.data.get_mut(index as usize) {
@@ -58,7 +59,18 @@ impl Bitmap {
         }
     }
 
+    #[allow(dead_code)]
     pub fn to_file<P: AsRef<Path>>(&self, ref path: &P) {
+        let mut file = File::create(path).unwrap();
+        self.write_out(&mut file);
+    }
+
+    pub fn to_stdout(&self) {
+        let mut file = stdout();
+        self.write_out(&mut file);
+    }
+
+    fn write_out<W: Write>(&self, ref mut file: &mut W) {
         let row_base_length = self.width * self.depth as i32 / 8;
         let row_padding = match row_base_length % ROW_PAD_WIDTH {
             0 => 0,
@@ -68,15 +80,13 @@ impl Bitmap {
 
         //println!("Writing {:?} of length {}", self.data, self.data.len());
 
-        let mut file = File::create(path).unwrap();
-
-        self.write_header(&mut file, size);
-        self.write_dib(&mut file);
-        self.write_pixels(&mut file, row_padding);
+        self.write_header(file, size);
+        self.write_dib(file);
+        self.write_pixels(file, row_padding);
         file.flush().unwrap();
     }
 
-    fn write_header(&self, ref mut buf: &mut File, size: i32) {
+    fn write_header<W: Write>(&self, ref mut buf: &mut W, size: i32) {
         buf.write(&BITMAP_PREFIX).unwrap();
         // File size
         buf.write_i32::<LittleEndian>(size).unwrap();
@@ -87,7 +97,7 @@ impl Bitmap {
         buf.write_i32::<LittleEndian>(PIXEL_START).unwrap();
     }
 
-    fn write_dib(&self, ref mut buf: &mut File) {
+    fn write_dib<W: Write>(&self, ref mut buf: &mut W) {
         // DIB header size
         buf.write_i32::<LittleEndian>(DIB_SIZE).unwrap();
         // Bitmap width
@@ -112,7 +122,7 @@ impl Bitmap {
         buf.write_i32::<LittleEndian>(IMPORTANT).unwrap();
     }
 
-    fn write_pixels(&self, ref mut buf: &mut File, row_padding: i32) {
+    fn write_pixels<W: Write>(&self, ref mut buf: &mut W, row_padding: i32) {
         // Generate the row padding
         let mut padding: Vec<u8> = Vec::new();
         for _ in 1..row_padding {
@@ -144,6 +154,7 @@ fn to_bgr(color: Color) -> Vec<u8> {
     match color {
         Color::RGB(r, g, b) => vec![b, g, r],
         Color::Grey(g) => vec![g, g, g],
+        Color::Black => vec![0u8, 0u8, 0u8],
     }
 }
 
@@ -151,5 +162,6 @@ fn to_grey(color: Color) ->  Vec<u8> {
     match color {
         Color::RGB(r, g, b) => vec![((r as u32 + g as u32 + b as u32) / 3) as u8],
         Color::Grey(g) => vec![g],
+        Color::Black => vec![0u8],
     }
 }

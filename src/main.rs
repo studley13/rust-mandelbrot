@@ -1,12 +1,14 @@
 mod tile;
 mod image;
+mod style;
 
 use std::env;
 use std::process::exit;
 use std::str::FromStr;
 
-const MAX_DEPTH:          u32 = 255;
-const DEFAULT_RESOLUTION: u32 = 1024;
+#[allow(dead_code)]
+const MAX_DEPTH:          u32 = 2048;
+const DEFAULT_RESOLUTION: u32 = 2056;
 
 fn main() {
     let loc = tile_requirements();
@@ -18,14 +20,17 @@ fn main() {
 
     for y in 0..DEFAULT_RESOLUTION {
         for x in 0..DEFAULT_RESOLUTION {
-            let color = image::Color::Grey((tile.point_value(x, y) * MAX_DEPTH as f64) as u8);
+            //let color = image::Color::Grey((tile.point_value(x, y) * MAX_DEPTH as f64) as u8);
+            let depth = tile.point_value(x, y);
+            let color = style::purple(depth);
             img.set(x as i32, y as i32, color);
         }
     }
 
-    let file_name = format!("mbrotTile_{:.6}x-{:.6}y-{}z.bmp", loc.x, loc.y, loc.z);
-    img.to_file(&file_name);
-    println!("{}", file_name);
+    //let file_name = format!("mbrotTile_{:.6}x-{:.6}y-{}z.bmp", loc.x, loc.y, loc.z);
+    //img.to_file(&file_name);
+    img.to_stdout();
+    //println!("{}", file_name);
 }
 
 fn tile_requirements() -> tile::Location {
